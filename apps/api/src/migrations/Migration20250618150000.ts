@@ -1,7 +1,8 @@
 import { Migration } from '@mikro-orm/migrations';
 
-export class Migration20250618230000 extends Migration {
+export class Migration20250618150000 extends Migration {
   override up(): void {
+    this.addSql(`create extension if not exists citext;`);
     this.addSql(`
       create table "users" (
         "id" uuid not null default gen_random_uuid(),
