@@ -1,3 +1,6 @@
-# Nixpacks — Node 22 (pnpm detectado desde packageManager en package.json)
+# Nixpacks — Node 24 (MikroORM 7 requiere Node ≥22.17; el archive default de Node 22 en Railway era 22.11)
 [variables]
-NIXPACKS_NODE_VERSION = "22"
+NIXPACKS_NODE_VERSION = "24"
+
+[phases.setup]
+nixpkgsArchive = "23f9169c4ccce521379e602cc82ed873a1f1b52b"

@@ -152,6 +152,7 @@ Plan **Hobby** ~$5/mes (crédito incluido). Un API + Supabase free + Upstash fre
 | Síntoma | Causa probable |
 |---------|----------------|
 | Build falla en `pnpm install` | Lockfile desactualizado → `pnpm install` local y commit |
+| `ERR_REQUIRE_ESM` / `@mikro-orm/nestjs` | Node **&lt; 22.17** en el runtime → usar `NIXPACKS_NODE_VERSION=24` en `nixpacks.toml` (ya fijado en el repo) |
 | `health` 500 / DB error | `DATABASE_URL` incorrecta o migraciones pendientes |
 | Login no guarda sesión | `CORS_ORIGIN` / `WEB_APP_URL` mal o falta `COOKIE_SAME_SITE=none` |
 | Colas no corren | Falta `REDIS_URL` TCP o workers desactivados |

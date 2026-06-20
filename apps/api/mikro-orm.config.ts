@@ -89,4 +89,5 @@ export default defineConfig({
     glob: '!(*.d).{js,ts}',
   },
   debug: process.env.NODE_ENV === 'development',
+  dynamicImportProvider: (id: string) => import(id),
 });
