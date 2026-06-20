@@ -1,0 +1,3 @@
+export const DEFAULT_TASK_POSITION = 1000;
+
+export const TASK_POSITION_GAP = 1000;

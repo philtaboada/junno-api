@@ -1,0 +1,23 @@
+{
+  "name": "project-management",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "onlyBuiltDependencies": ["bcrypt", "msgpackr-extract"]
+  },
+  "scripts": {
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:reset": "docker compose down -v && docker compose up -d",
+    "docker:search": "docker compose --profile search up -d",
+    "api:dev": "pnpm --filter @pm/api start:dev",
+    "api:build": "pnpm --filter @pm/api build",
+    "api:start:prod": "node apps/api/dist/src/main.js",
+    "api:test": "pnpm --filter @pm/api test",
+    "web:dev": "bun --cwd apps/web dev",
+    "web:build": "bun --cwd apps/web build",
+    "web:lint": "bun --cwd apps/web lint",
+    "typecheck": "pnpm --filter @pm/api exec tsc --noEmit && pnpm --filter @pm/contracts typecheck && bun --cwd apps/web exec tsc --noEmit"
+  }
+}
