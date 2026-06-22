@@ -157,7 +157,7 @@ Plan **Hobby** ~$5/mes (crédito incluido). Un API + Supabase free + Upstash fre
 | `ERR_REQUIRE_ESM` / `@mikro-orm/nestjs` | Node **&lt; 22.17** en el runtime → usar `NIXPACKS_NODE_VERSION=24` en `nixpacks.toml` (ya fijado en el repo) |
 | `health` 500 / DB error | `DATABASE_URL` incorrecta o migraciones pendientes |
 | Auth 500 (login/register) | `DATABASE_URL` mal — usar **Session pooler :5432**, no Transaction :6543. Probar `GET /api/v1/health/db` |
-| Login no guarda sesión | `CORS_ORIGIN` / `WEB_APP_URL` mal o falta `COOKIE_SAME_SITE=none` |
+| Login no guarda sesión | `CORS_ORIGIN` / `WEB_APP_URL` mal (deben ser la URL exacta de Vercel). En prod la API ya usa `SameSite=None` por defecto; override con `COOKIE_SAME_SITE` si hace falta |
 | Colas no corren | Falta `REDIS_URL` TCP o workers desactivados |
 | Upstash `max requests limit exceeded` | BullMQ workers hacen polling 24/7 → `AUTOMATION_WORKER_ENABLED=false`, `INTEGRATIONS_WORKER_ENABLED=false` y quita `REDIS_URL` en MVP |
 | CORS error en browser | `CORS_ORIGIN` debe ser exactamente la URL del frontend (con `https://`) |

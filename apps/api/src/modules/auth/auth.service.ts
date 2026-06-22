@@ -241,24 +241,29 @@ export class AuthService {
   }
 
   private setRefreshCookie(response: Response, token: string): void {
-    const isProduction = process.env.NODE_ENV === 'production';
     response.cookie(REFRESH_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: this.resolveCookieSameSite(),
-      path: REFRESH_COOKIE_PATH,
+      ...this.resolveRefreshCookieOptions(),
       maxAge: REFRESH_TOKEN_TTL_MS,
     });
   }
 
   private clearRefreshCookie(response: Response): void {
-    const isProduction = process.env.NODE_ENV === 'production';
-    response.clearCookie(REFRESH_COOKIE_NAME, {
+    response.clearCookie(REFRESH_COOKIE_NAME, this.resolveRefreshCookieOptions());
+  }
+
+  private resolveRefreshCookieOptions(): {
+    httpOnly: true;
+    secure: boolean;
+    sameSite: 'lax' | 'none' | 'strict';
+    path: string;
+  } {
+    const sameSite = this.resolveCookieSameSite();
+    return {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: this.resolveCookieSameSite(),
+      secure: this.resolveCookieSecure(sameSite),
+      sameSite,
       path: REFRESH_COOKIE_PATH,
-    });
+    };
   }
 
   private resolveCookieSameSite(): 'lax' | 'none' | 'strict' {
@@ -266,7 +271,17 @@ export class AuthService {
     if (configured === 'none' || configured === 'strict' || configured === 'lax') {
       return configured;
     }
+    if (process.env.NODE_ENV === 'production') {
+      return 'none';
+    }
     return 'lax';
+  }
+
+  private resolveCookieSecure(sameSite: 'lax' | 'none' | 'strict'): boolean {
+    if (sameSite === 'none') {
+      return true;
+    }
+    return process.env.NODE_ENV === 'production';
   }
 
   private hashToken(token: string): string {
