@@ -1,11 +1,18 @@
 import type { ConfigService } from '@nestjs/config';
 
 /**
- * BullMQ workers poll Redis continuously — keep them off in MVP unless explicitly enabled.
+ * Workers are on when REDIS_URL is set, unless explicitly disabled with =false.
  */
 export function isBackgroundWorkerEnabled(
   configService: ConfigService,
   envKey: 'AUTOMATION_WORKER_ENABLED' | 'INTEGRATIONS_WORKER_ENABLED',
 ): boolean {
-  return configService.get<string>(envKey) === 'true';
+  const explicitValue = configService.get<string>(envKey)?.trim().toLowerCase();
+  if (explicitValue === 'false') {
+    return false;
+  }
+  if (explicitValue === 'true') {
+    return true;
+  }
+  return Boolean(configService.get<string>('REDIS_URL')?.trim());
 }

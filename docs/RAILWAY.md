@@ -77,33 +77,26 @@ postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.co
 > **No uses el Transaction pooler (6543)** con MikroORM en Railway — provoca errores 500 en login/register.  
 > Sustituye `[REGION]` por la región de tu proyecto (ej. `sa-east-1`). La contraseña es la de la base de datos, no la `service_role` key.
 
-### Upstash / Redis (solo Fase 3 — automation e integraciones)
+### Redis (BullMQ — automation e integraciones)
 
-No necesitas Redis para auth, tasks ni login. Si añades `REDIS_URL`, **desactiva workers en MVP** o BullMQ hará polling 24/7 y agotará el free tier de Upstash (~500k comandos/mes).
-
-Dashboard Upstash → **Connect** → **TCP** (`rediss://`):
+Con `REDIS_URL` configurada, los workers de automation e integraciones **arrancan solos**. Desactívalos con `=false` si no usas colas.
 
 ```bash
-rediss://default:[PASSWORD]@[HOST].upstash.io:6379
+REDIS_URL=rediss://default:[PASSWORD]@[HOST]:6379
+# AUTOMATION_WORKER_ENABLED=false
+# INTEGRATIONS_WORKER_ENABLED=false
 ```
 
-Cuando uses colas en producción, activa explícitamente:
-
-```bash
-AUTOMATION_WORKER_ENABLED=true
-INTEGRATIONS_WORKER_ENABLED=true
-```
-
-**Alternativas a Upstash free:** Redis en Railway (~plan hobby), Upstash de pago, o Redis en Docker solo local.
+> Usa URL **TCP** (`rediss://`), no REST. Upstash free no aguanta polling 24/7; Railway Redis u otro proveedor con cuota amplia es mejor para workers permanentes.
 
 ### Opcionales
 
 | Variable | Valor |
 |----------|--------|
 | `SEARCH_ENGINE` | `postgres` |
-| `AUTOMATION_WORKER_ENABLED` | `false` en MVP (BullMQ agota Upstash free) |
-| `INTEGRATIONS_WORKER_ENABLED` | `false` en MVP |
-| `REDIS_URL` | Solo si activas workers; ver nota abajo |
+| `REDIS_URL` | URL TCP `rediss://...` de tu proveedor Redis |
+| `AUTOMATION_WORKER_ENABLED` | Omitir (on con `REDIS_URL`) o `false` para desactivar |
+| `INTEGRATIONS_WORKER_ENABLED` | Omitir (on con `REDIS_URL`) o `false` para desactivar |
 | `COOKIE_SAME_SITE` | `none` si el login falla entre dominios distintos |
 | `SLACK_REDIRECT_URI` | `https://TU-RAILWAY/api/v1/public/integrations/slack/oauth/callback` |
 
