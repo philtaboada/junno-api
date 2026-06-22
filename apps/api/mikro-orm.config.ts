@@ -39,10 +39,25 @@ import { Team } from './src/modules/teams/entities/team.entity';
 import { WorkspaceMember } from './src/modules/workspaces/entities/workspace-member.entity';
 import { Workspace } from './src/modules/workspaces/entities/workspace.entity';
 
+function resolveDatabaseDriverOptions(): { connection: { ssl?: { rejectUnauthorized: boolean } } } | undefined {
+  const databaseUrl = process.env.DATABASE_URL ?? '';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const usesRemoteDatabase = databaseUrl.includes('supabase.com') || databaseUrl.includes('railway.app');
+  if (!isProduction && !usesRemoteDatabase) {
+    return undefined;
+  }
+  return {
+    connection: {
+      ssl: { rejectUnauthorized: false },
+    },
+  };
+}
+
 export default defineConfig({
   clientUrl:
     process.env.DATABASE_URL ??
     'postgresql://pm:pm_dev_password@localhost:5432/project_management',
+  driverOptions: resolveDatabaseDriverOptions(),
   entities: [
     User,
     Workspace,

@@ -69,13 +69,14 @@ Copia en el panel de Railway (no uses `localhost`).
 
 ### Supabase → `DATABASE_URL`
 
-Dashboard Supabase → **Connect** → **ORMs** → **Transaction pooler** (IPv4, puerto 6543):
+Dashboard Supabase → **Connect** → **ORMs** → **Session pooler** (IPv4, puerto **5432**):
 
 ```bash
-postgresql://postgres.uiogzcxitfdveluczqxe:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?sslmode=require
+postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-> Sustituye `[REGION]` por la región de tu proyecto (ej. `us-east-1`). La contraseña es la de la base de datos, no la `service_role` key.
+> **No uses el Transaction pooler (6543)** con MikroORM en Railway — provoca errores 500 en login/register.  
+> Sustituye `[REGION]` por la región de tu proyecto (ej. `sa-east-1`). La contraseña es la de la base de datos, no la `service_role` key.
 
 ### Upstash → `REDIS_URL`
 
@@ -154,6 +155,7 @@ Plan **Hobby** ~$5/mes (crédito incluido). Un API + Supabase free + Upstash fre
 | Build falla en `pnpm install` | Lockfile desactualizado → `pnpm install` local y commit |
 | `ERR_REQUIRE_ESM` / `@mikro-orm/nestjs` | Node **&lt; 22.17** en el runtime → usar `NIXPACKS_NODE_VERSION=24` en `nixpacks.toml` (ya fijado en el repo) |
 | `health` 500 / DB error | `DATABASE_URL` incorrecta o migraciones pendientes |
+| Auth 500 (login/register) | `DATABASE_URL` mal — usar **Session pooler :5432**, no Transaction :6543. Probar `GET /api/v1/health/db` |
 | Login no guarda sesión | `CORS_ORIGIN` / `WEB_APP_URL` mal o falta `COOKIE_SAME_SITE=none` |
 | Colas no corren | Falta `REDIS_URL` TCP o workers desactivados |
 | CORS error en browser | `CORS_ORIGIN` debe ser exactamente la URL del frontend (con `https://`) |

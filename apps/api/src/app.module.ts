@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DatabaseStartupService } from './database-startup.service';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { AutomationModule } from './modules/automation/automation.module';
 import { FormsModule } from './modules/forms/forms.module';
@@ -50,6 +51,6 @@ import mikroOrmConfig from '../mikro-orm.config';
     NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, DatabaseStartupService],
 })
 export class AppModule {}

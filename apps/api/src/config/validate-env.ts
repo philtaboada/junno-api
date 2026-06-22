@@ -1,3 +1,5 @@
+import { validateDatabaseUrl } from './validate-database';
+
 const REQUIRED_ENV_KEYS = [
   'JWT_ACCESS_SECRET',
   'DATABASE_URL',
@@ -9,11 +11,11 @@ const REQUIRED_ENV_KEYS = [
  */
 export function validateRequiredEnv(): void {
   const missingKeys = REQUIRED_ENV_KEYS.filter((key) => !process.env[key]?.trim());
-  if (missingKeys.length === 0) {
-    return;
+  if (missingKeys.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingKeys.join(', ')}. ` +
+        'Set them in Railway → your API service → Variables (not only Shared Variables), then redeploy.',
+    );
   }
-  throw new Error(
-    `Missing required environment variables: ${missingKeys.join(', ')}. ` +
-      'Set them in Railway → your API service → Variables (not only Shared Variables), then redeploy.',
-  );
+  validateDatabaseUrl(process.env.DATABASE_URL!.trim());
 }
