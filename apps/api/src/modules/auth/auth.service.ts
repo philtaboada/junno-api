@@ -271,7 +271,7 @@ export class AuthService {
     if (configured === 'none' || configured === 'strict' || configured === 'lax') {
       return configured;
     }
-    if (process.env.NODE_ENV === 'production') {
+    if (this.requiresCrossOriginCookies()) {
       return 'none';
     }
     return 'lax';
@@ -281,7 +281,32 @@ export class AuthService {
     if (sameSite === 'none') {
       return true;
     }
+    if (this.requiresCrossOriginCookies()) {
+      return true;
+    }
     return process.env.NODE_ENV === 'production';
+  }
+
+  private requiresCrossOriginCookies(): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return true;
+    }
+    const corsOrigin = process.env.CORS_ORIGIN?.trim();
+    if (!corsOrigin) {
+      return false;
+    }
+    return corsOrigin
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin.length > 0)
+      .some((origin) => {
+        try {
+          const url = new URL(origin);
+          return url.hostname !== 'localhost' && url.hostname !== '127.0.0.1';
+        } catch {
+          return false;
+        }
+      });
   }
 
   private hashToken(token: string): string {
