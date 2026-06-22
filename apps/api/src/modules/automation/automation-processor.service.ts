@@ -12,6 +12,7 @@ import { AUTOMATION_QUEUE_NAME } from './automation.constants';
 import { AutomationExecutorService } from './automation-executor.service';
 import { toEntityTriggerType } from './automation-config.utils';
 import { AutomationRulesService } from './automation-rules.service';
+import { isBackgroundWorkerEnabled } from '../../config/worker-env';
 import { AutomationRun, AutomationRunStatus } from './entities/automation-run.entity';
 import {
   AutomationRule,
@@ -38,7 +39,7 @@ export class AutomationProcessorService implements OnModuleInit, OnModuleDestroy
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (this.configService.get<string>('AUTOMATION_WORKER_ENABLED') === 'false') {
+    if (!isBackgroundWorkerEnabled(this.configService, 'AUTOMATION_WORKER_ENABLED')) {
       return;
     }
     const connection = this.buildConnection();

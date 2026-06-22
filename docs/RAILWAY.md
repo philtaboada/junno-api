@@ -55,8 +55,7 @@ Copia en el panel de Railway (no uses `localhost`).
 | Variable | Valor |
 |----------|--------|
 | `NODE_ENV` | `production` |
-| `DATABASE_URL` | Supabase **Transaction pooler** puerto **6543** |
-| `REDIS_URL` | Upstash **TCP** `rediss://...` (no REST URL) |
+| `DATABASE_URL` | Supabase **Session pooler** puerto **5432** |
 | `JWT_ACCESS_SECRET` | Mín. 32 caracteres aleatorios |
 | `JWT_ACCESS_EXPIRES_IN` | `15m` |
 | `JWT_REFRESH_EXPIRES_DAYS` | `7` |
@@ -78,23 +77,33 @@ postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.co
 > **No uses el Transaction pooler (6543)** con MikroORM en Railway — provoca errores 500 en login/register.  
 > Sustituye `[REGION]` por la región de tu proyecto (ej. `sa-east-1`). La contraseña es la de la base de datos, no la `service_role` key.
 
-### Upstash → `REDIS_URL`
+### Upstash / Redis (solo Fase 3 — automation e integraciones)
 
-Dashboard Upstash → tu base Redis → pestaña **Connect** → **Redis CLI** / **TCP** (ioredis):
+No necesitas Redis para auth, tasks ni login. Si añades `REDIS_URL`, **desactiva workers en MVP** o BullMQ hará polling 24/7 y agotará el free tier de Upstash (~500k comandos/mes).
+
+Dashboard Upstash → **Connect** → **TCP** (`rediss://`):
 
 ```bash
 rediss://default:[PASSWORD]@[HOST].upstash.io:6379
 ```
 
-> **No** uses `UPSTASH_REDIS_REST_URL` — BullMQ necesita la URL TCP `rediss://`.
+Cuando uses colas en producción, activa explícitamente:
+
+```bash
+AUTOMATION_WORKER_ENABLED=true
+INTEGRATIONS_WORKER_ENABLED=true
+```
+
+**Alternativas a Upstash free:** Redis en Railway (~plan hobby), Upstash de pago, o Redis en Docker solo local.
 
 ### Opcionales
 
 | Variable | Valor |
 |----------|--------|
 | `SEARCH_ENGINE` | `postgres` |
-| `AUTOMATION_WORKER_ENABLED` | `true` (con Redis) |
-| `INTEGRATIONS_WORKER_ENABLED` | `true` (con Redis) |
+| `AUTOMATION_WORKER_ENABLED` | `false` en MVP (BullMQ agota Upstash free) |
+| `INTEGRATIONS_WORKER_ENABLED` | `false` en MVP |
+| `REDIS_URL` | Solo si activas workers; ver nota abajo |
 | `COOKIE_SAME_SITE` | `none` si el login falla entre dominios distintos |
 | `SLACK_REDIRECT_URI` | `https://TU-RAILWAY/api/v1/public/integrations/slack/oauth/callback` |
 
@@ -158,6 +167,7 @@ Plan **Hobby** ~$5/mes (crédito incluido). Un API + Supabase free + Upstash fre
 | Auth 500 (login/register) | `DATABASE_URL` mal — usar **Session pooler :5432**, no Transaction :6543. Probar `GET /api/v1/health/db` |
 | Login no guarda sesión | `CORS_ORIGIN` / `WEB_APP_URL` mal o falta `COOKIE_SAME_SITE=none` |
 | Colas no corren | Falta `REDIS_URL` TCP o workers desactivados |
+| Upstash `max requests limit exceeded` | BullMQ workers hacen polling 24/7 → `AUTOMATION_WORKER_ENABLED=false`, `INTEGRATIONS_WORKER_ENABLED=false` y quita `REDIS_URL` en MVP |
 | CORS error en browser | `CORS_ORIGIN` debe ser exactamente la URL del frontend (con `https://`) |
 
 Ver también `docs/DEPLOY.md` (visión general).

@@ -10,6 +10,7 @@ import { Worker } from 'bullmq';
 import type { IntegrationJobPayload } from './integration-job.types';
 import { INTEGRATIONS_QUEUE_NAME } from './integration-job.types';
 import { IntegrationDeliveryService } from './integration-delivery.service';
+import { isBackgroundWorkerEnabled } from '../../config/worker-env';
 import { IntegrationPayloadService } from './integration-payload.service';
 import { ProjectIntegration } from './entities/project-integration.entity';
 
@@ -31,7 +32,7 @@ export class IntegrationProcessorService implements OnModuleInit, OnModuleDestro
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (this.configService.get<string>('INTEGRATIONS_WORKER_ENABLED') === 'false') {
+    if (!isBackgroundWorkerEnabled(this.configService, 'INTEGRATIONS_WORKER_ENABLED')) {
       return;
     }
     const connection = this.buildConnection();
