@@ -71,11 +71,10 @@ Copia en el panel de Railway (no uses `localhost`).
 Dashboard Supabase → **Connect** → **ORMs** → **Session pooler** (IPv4, puerto **5432**):
 
 ```bash
-postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres?sslmode=require
+postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-1-[REGION].pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-> **No uses el Transaction pooler (6543)** con MikroORM en Railway — provoca errores 500 en login/register.  
-> Sustituye `[REGION]` por la región de tu proyecto (ej. `sa-east-1`). La contraseña es la de la base de datos, no la `service_role` key.
+> **Copia el host exacto** desde Supabase → Connect → Session pooler. No asumas `aws-0-`; muchos proyectos usan `aws-1-[region]` (ej. `aws-1-us-east-2`).
 
 ### Redis (BullMQ — automation e integraciones)
 

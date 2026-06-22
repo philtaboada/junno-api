@@ -22,9 +22,10 @@ export class DatabaseStartupService implements OnApplicationBootstrap {
       return;
     }
     const details = formatDatabaseHealthError(result);
-    throw new Error(
+    this.logger.error(
       `Database validation failed: ${details}. ` +
-        'Check Railway → DATABASE_URL (Supabase session pooler :5432) and run migrations.',
+        'Check Railway → DATABASE_URL (Supabase session pooler, host from Connect dialog). ' +
+        'Use GET /api/v1/health/db after deploy.',
     );
   }
 }
