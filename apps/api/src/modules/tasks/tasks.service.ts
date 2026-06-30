@@ -846,16 +846,8 @@ export class TasksService {
         customFieldValuesByTaskId.get(task.id) ?? {},
         blockedTaskIds.has(task.id),
       );
-      if (!task.dueAt) {
-        sectionBuckets.later.push(summary);
-        continue;
-      }
-      const dueAt = task.dueAt;
-      if (dueAt < startOfTomorrow) {
-        sectionBuckets.today.push(summary);
-        continue;
-      }
-      sectionBuckets.upcoming.push(summary);
+      const sectionId = this.resolveMyTasksSectionId(task, startOfTomorrow);
+      sectionBuckets[sectionId].push(summary);
     }
     const sections: MyTasksSectionDto[] = MY_TASKS_SECTIONS.map((section) => ({
       id: section.id,
@@ -1399,6 +1391,20 @@ export class TasksService {
       counts.set(parentId, (counts.get(parentId) ?? 0) + 1);
     }
     return counts;
+  }
+
+  private resolveMyTasksSectionId(
+    task: Task,
+    startOfTomorrow: Date,
+  ): MyTasksSectionId {
+    const schedulingDate = task.dueAt ?? task.startAt;
+    if (!schedulingDate) {
+      return 'later';
+    }
+    if (schedulingDate < startOfTomorrow) {
+      return 'today';
+    }
+    return 'upcoming';
   }
 
   private startOfUtcDay(date: Date): Date {
