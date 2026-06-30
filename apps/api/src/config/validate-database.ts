@@ -52,8 +52,7 @@ export async function runDatabaseHealthChecks(
     await entityManager.getConnection().execute('select 1 as ok');
     checks.push({ name: 'connection', status: 'ok' });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown connection error';
-    checks.push({ name: 'connection', status: 'error', message });
+    checks.push({ name: 'connection', status: 'error', message: getDatabaseErrorMessage(error) });
     return { status: 'error', checks };
   }
   const schemaChecks: Array<{ name: string; sql: string }> = [
@@ -66,12 +65,37 @@ export async function runDatabaseHealthChecks(
       await entityManager.getConnection().execute(schemaCheck.sql);
       checks.push({ name: schemaCheck.name, status: 'ok' });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown schema error';
-      checks.push({ name: schemaCheck.name, status: 'error', message });
+      checks.push({
+        name: schemaCheck.name,
+        status: 'error',
+        message: getDatabaseErrorMessage(error),
+      });
     }
   }
   const hasError = checks.some((check) => check.status === 'error');
   return { status: hasError ? 'error' : 'ok', checks };
+}
+
+function getDatabaseErrorMessage(error: unknown): string {
+  if (error instanceof AggregateError) {
+    const nested = error.errors
+      .map((nestedError) => getDatabaseErrorMessage(nestedError))
+      .filter((message) => message.length > 0);
+    if (nested.length > 0) {
+      return nested.join('; ');
+    }
+  }
+  if (!(error instanceof Error)) {
+    return 'Unknown database error';
+  }
+  if (error.message.trim()) {
+    return error.message;
+  }
+  const cause = (error as Error & { cause?: unknown }).cause;
+  if (cause instanceof Error && cause.message.trim()) {
+    return cause.message;
+  }
+  return error.name || 'Unknown database error';
 }
 
 export function formatDatabaseHealthError(result: DatabaseHealthResult): string {

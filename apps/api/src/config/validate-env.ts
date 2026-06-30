@@ -14,7 +14,8 @@ export function validateRequiredEnv(): void {
   if (missingKeys.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missingKeys.join(', ')}. ` +
-        'Set them in Railway → your API service → Variables (not only Shared Variables), then redeploy.',
+        'Local dev: set them in the monorepo root `.env` (see `.env.example`). ' +
+        'Production: Railway → your API service → Variables (not only Shared Variables), then redeploy.',
     );
   }
   validateDatabaseUrl(process.env.DATABASE_URL!.trim());

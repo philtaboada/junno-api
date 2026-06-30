@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import './src/config/load-monorepo-env';
 import { defineConfig } from '@mikro-orm/postgresql';
 import { PasswordResetToken } from './src/modules/auth/entities/password-reset-token.entity';
 import { RefreshToken } from './src/modules/auth/entities/refresh-token.entity';
@@ -38,11 +39,12 @@ import { TeamMember } from './src/modules/teams/entities/team-member.entity';
 import { Team } from './src/modules/teams/entities/team.entity';
 import { WorkspaceMember } from './src/modules/workspaces/entities/workspace-member.entity';
 import { Workspace } from './src/modules/workspaces/entities/workspace.entity';
+import { resolveDatabaseConfig } from './src/config/database-driver';
+
+const databaseConfig = resolveDatabaseConfig();
 
 export default defineConfig({
-  clientUrl:
-    process.env.DATABASE_URL ??
-    'postgresql://pm:pm_dev_password@localhost:5432/project_management',
+  clientUrl: databaseConfig.clientUrl,
   entities: [
     User,
     Workspace,

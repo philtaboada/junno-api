@@ -1,7 +1,7 @@
-import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MikroOrmModule } from '@mikro-orm/nestjs';
+import { getMonorepoEnvFilePaths } from './config/env-file-paths';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseStartupService } from './database-startup.service';
@@ -26,10 +26,7 @@ import mikroOrmConfig from '../mikro-orm.config';
     ConfigModule.forRoot({
       isGlobal: true,
       ignoreEnvFile: process.env.NODE_ENV === 'production',
-      envFilePath: [
-        join(__dirname, '..', '..', '..', '.env'),
-        join(__dirname, '..', '..', '..', '.env.local'),
-      ],
+      envFilePath: getMonorepoEnvFilePaths(__dirname),
     }),
     MikroOrmModule.forRoot({
       ...mikroOrmConfig,
