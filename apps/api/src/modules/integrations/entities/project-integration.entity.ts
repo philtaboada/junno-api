@@ -6,6 +6,8 @@ import { Workspace } from '../../workspaces/entities/workspace.entity';
 export enum IntegrationType {
   WEBHOOK = 'webhook',
   SLACK = 'slack',
+  DISCORD = 'discord',
+  GITHUB = 'github',
   WHATSAPP_KAPSO = 'whatsapp_kapso',
 }
 

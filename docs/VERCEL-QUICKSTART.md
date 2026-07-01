@@ -4,9 +4,9 @@
 
 ## Importante antes de empezar
 
-1. **Inicia sesión en Vercel con la cuenta `sunno1`** (en terminal: `pnpm dlx vercel login`).
-2. Este repo **aún no está en GitHub** con commits — conecta el repo o haz deploy por CLI.
-3. Necesitas **2 proyectos Vercel** (web + api). `project-3j7je` será uno; crea otro para la API.
+1. **Inicia sesión en Vercel con la cuenta `sunno1`** (en terminal: `bunx vercel login`).
+2. **Producción real:** `www.junno.online` → proyecto **`project-3j7je`**. Existe otro proyecto `web` en la misma cuenta; **no usarlo** para prod (no tiene el dominio custom).
+3. El frontend se despliega por **CLI**, no por git push. El backend va en **Railway** vía git push (ver `docs/DEPLOY.md`).
 
 ---
 
@@ -35,22 +35,25 @@ Sustituye `TU-API` por la URL real del segundo proyecto.
 
 > Supabase y Upstash **no van en el proyecto web** — van en el proyecto **API**.
 
-### Deploy
+### Deploy (CLI — método acordado)
 
-**Opción A — Git (recomendado)**  
-1. Sube `project-management` a GitHub.  
-2. Vercel → **Add Git Repository** → elige el repo.  
-3. Aplica la config de arriba → **Deploy**.
-
-**Opción B — CLI**
+Desde la **raíz del monorepo** (el proyecto Vercel tiene Root Directory `apps/web`; si corres desde `apps/web` la ruta se duplica y falla):
 
 ```bash
 cd project-management
-pnpm dlx vercel login          # cuenta sunno1
-cd apps/web
-pnpm dlx vercel link --project project-3j7je --scope sunno1
-pnpm dlx vercel deploy --prod
+bunx vercel login                              # cuenta sunno1 (una vez)
+bunx vercel link --project project-3j7je --scope sunno1 --yes
+bunx vercel deploy --prod --yes
 ```
+
+Verificar que prod apunta a junno.online:
+
+```bash
+bunx vercel inspect www.junno.online
+# → name: project-3j7je, aliases: www.junno.online
+```
+
+**No desplegar en `sunno1/web`** — ese proyecto usa `web-*.vercel.app` y no sirve junno.online.
 
 ---
 

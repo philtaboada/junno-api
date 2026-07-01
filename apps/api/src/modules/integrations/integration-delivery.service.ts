@@ -57,6 +57,10 @@ export class IntegrationDeliveryService {
           return await this.deliverWebhook(integration.config, event);
         case IntegrationType.SLACK:
           return await this.deliverSlack(integration.config, event);
+        case IntegrationType.DISCORD:
+          return await this.deliverDiscord(integration.config, event);
+        case IntegrationType.GITHUB:
+          return await this.deliverGitHub(integration.config, event);
         case IntegrationType.WHATSAPP_KAPSO:
           return await this.deliverWhatsappKapso(integration.config, event);
         default:
@@ -166,6 +170,114 @@ export class IntegrationDeliveryService {
     };
   }
 
+  private async deliverDiscord(
+    config: Record<string, unknown>,
+    event: IntegrationEventPayloadDto,
+  ): Promise<DeliveryResult> {
+    const mode = config.mode === 'bot' ? 'bot' : 'webhook';
+    const content = this.integrationPayloadService.buildDiscordText(event);
+    if (mode === 'webhook') {
+      const webhookUrl = typeof config.webhookUrl === 'string' ? config.webhookUrl : null;
+      if (!webhookUrl) {
+        return {
+          status: IntegrationDeliveryStatus.FAILED,
+          responseCode: null,
+          errorMessage: 'Webhook URL de Discord no configurada',
+        };
+      }
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+      return this.mapFetchResult(response, true);
+    }
+    const botToken = typeof config.botToken === 'string' ? config.botToken : null;
+    const channelId = typeof config.channelId === 'string' ? config.channelId : null;
+    if (!botToken || !channelId) {
+      return {
+        status: IntegrationDeliveryStatus.FAILED,
+        responseCode: null,
+        errorMessage: 'Discord bot incompleto (token o canal)',
+      };
+    }
+    const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bot ${botToken}`,
+        'User-Agent': 'Junno-Integrations (https://junno.online)',
+      },
+      body: JSON.stringify({ content }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      this.logger.warn(`Discord bot delivery failed: ${response.status} ${errorText}`);
+      return {
+        status: IntegrationDeliveryStatus.FAILED,
+        responseCode: response.status,
+        errorMessage: `Discord respondió ${response.status}`,
+      };
+    }
+    return {
+      status: IntegrationDeliveryStatus.SUCCESS,
+      responseCode: response.status,
+      errorMessage: null,
+    };
+  }
+
+  private async deliverGitHub(
+    config: Record<string, unknown>,
+    event: IntegrationEventPayloadDto,
+  ): Promise<DeliveryResult> {
+    if (event.type !== 'task.created') {
+      return {
+        status: IntegrationDeliveryStatus.FAILED,
+        responseCode: null,
+        errorMessage: 'GitHub solo crea issues en task.created',
+      };
+    }
+    const owner = typeof config.owner === 'string' ? config.owner.trim() : '';
+    const repo = typeof config.repo === 'string' ? config.repo.trim() : '';
+    const accessToken = typeof config.accessToken === 'string' ? config.accessToken : null;
+    if (!owner || !repo || !accessToken) {
+      return {
+        status: IntegrationDeliveryStatus.FAILED,
+        responseCode: null,
+        errorMessage: 'Config GitHub incompleta (owner, repo o token)',
+      };
+    }
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+      'User-Agent': 'Junno-Integrations',
+    };
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        title: this.integrationPayloadService.buildGitHubIssueTitle(event),
+        body: this.integrationPayloadService.buildGitHubCommentBody(event),
+      }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      this.logger.warn(`GitHub create issue failed: ${response.status} ${errorText}`);
+      return {
+        status: IntegrationDeliveryStatus.FAILED,
+        responseCode: response.status,
+        errorMessage: `GitHub respondió ${response.status}`,
+      };
+    }
+    return {
+      status: IntegrationDeliveryStatus.SUCCESS,
+      responseCode: response.status,
+      errorMessage: null,
+    };
+  }
+
   private async deliverWhatsappKapso(
     config: Record<string, unknown>,
     event: IntegrationEventPayloadDto,
@@ -227,18 +339,18 @@ export class IntegrationDeliveryService {
     };
   }
 
-  private mapFetchResult(response: Response): DeliveryResult {
-    if (!response.ok) {
+  private mapFetchResult(response: Response, allowNoContent = false): DeliveryResult {
+    if (response.ok || (allowNoContent && response.status === 204)) {
       return {
-        status: IntegrationDeliveryStatus.FAILED,
+        status: IntegrationDeliveryStatus.SUCCESS,
         responseCode: response.status,
-        errorMessage: `HTTP ${response.status}`,
+        errorMessage: null,
       };
     }
     return {
-      status: IntegrationDeliveryStatus.SUCCESS,
+      status: IntegrationDeliveryStatus.FAILED,
       responseCode: response.status,
-      errorMessage: null,
+      errorMessage: `HTTP ${response.status}`,
     };
   }
 }

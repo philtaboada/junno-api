@@ -66,6 +66,7 @@ project-management/
 | Frontend / UI | `docs/UI.md` + `.cursor/rules/ui-design.mdc` + `.cursor/rules/react-frontend.mdc` |
 | Modelo de datos | `docs/DATA-MODEL.md` |
 | Nueva feature | `docs/PRODUCT.md` (fase correspondiente) + **`docs/CORE-PHASE2.md`** si es Fase 2 |
+| **Deploy prod** | `.cursor/rules/deploy.mdc` + `docs/DEPLOY.md` |
 
 ## Comandos (infra + apps)
 
@@ -87,6 +88,10 @@ pnpm web:lint
 
 # Todo
 pnpm typecheck
+
+# Deploy producción (ver .cursor/rules/deploy.mdc)
+git push origin main                    # backend → Railway
+bunx vercel deploy --prod --yes         # frontend → project-3j7je → www.junno.online (desde raíz)
 ```
 
 ## Fases de entrega

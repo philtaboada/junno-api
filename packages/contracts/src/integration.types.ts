@@ -1,4 +1,9 @@
-export type IntegrationType = 'webhook' | 'slack' | 'whatsapp_kapso';
+export type IntegrationType =
+  | 'webhook'
+  | 'slack'
+  | 'discord'
+  | 'github'
+  | 'whatsapp_kapso';
 
 export type IntegrationEventType = 'task.created' | 'task.updated';
 
@@ -10,9 +15,29 @@ export interface WebhookIntegrationConfigDto {
 export interface SlackIntegrationConfigDto {
   readonly mode: 'incoming_webhook' | 'oauth';
   readonly webhookUrl?: string;
+  /** Slack App Client ID — BYOC, guardado en DB por integración */
+  readonly clientId?: string;
+  /** Slack App Client Secret — enmascarado en respuestas API */
+  readonly clientSecret?: string;
   readonly channelId?: string;
   readonly channelName?: string;
   readonly teamName?: string;
+}
+
+export interface DiscordIntegrationConfigDto {
+  readonly mode: 'webhook' | 'bot';
+  /** Channel webhook URL (Integrations → Webhooks en Discord) */
+  readonly webhookUrl?: string;
+  readonly botToken?: string;
+  /** Snowflake del canal */
+  readonly channelId?: string;
+}
+
+export interface GitHubIntegrationConfigDto {
+  readonly owner: string;
+  readonly repo: string;
+  /** PAT classic (repo) o fine-grained con Issues — pegado en DB, sin OAuth */
+  readonly accessToken?: string;
 }
 
 export interface WhatsappKapsoIntegrationConfigDto {
@@ -23,6 +48,8 @@ export interface WhatsappKapsoIntegrationConfigDto {
 export type IntegrationConfigDto =
   | WebhookIntegrationConfigDto
   | SlackIntegrationConfigDto
+  | DiscordIntegrationConfigDto
+  | GitHubIntegrationConfigDto
   | WhatsappKapsoIntegrationConfigDto;
 
 export interface IntegrationSummaryDto {
@@ -55,6 +82,24 @@ export interface UpdateIntegrationRequestDto {
 
 export interface SlackOAuthStartResponseDto {
   readonly authorizeUrl: string;
+  /** Redirect URI fija de la plataforma — registrar en la Slack App del usuario */
+  readonly redirectUri: string;
+}
+
+/** URLs OAuth de plataforma (no secretos) para configurar apps externas */
+export interface IntegrationOAuthSetupDto {
+  readonly slackRedirectUri: string;
+}
+
+export interface GitHubRepoOptionDto {
+  readonly owner: string;
+  readonly name: string;
+  readonly fullName: string;
+  readonly isPrivate: boolean;
+}
+
+export interface ListGitHubReposResponseDto {
+  readonly repos: GitHubRepoOptionDto[];
 }
 
 export interface IntegrationDeliveryLogDto {

@@ -10,7 +10,9 @@ import type {
   IntegrationDeliveryLogDto,
   IntegrationDetailDto,
   IntegrationEventType,
+  IntegrationOAuthSetupDto,
   IntegrationSummaryDto,
+  ListGitHubReposResponseDto,
   SlackOAuthStartResponseDto,
 } from '@pm/contracts';
 import type { WorkspaceContext } from '../auth/interfaces/jwt-payload.interface';
@@ -31,14 +33,17 @@ import {
   ProjectIntegration,
 } from './entities/project-integration.entity';
 import { SlackOAuthService } from './slack-oauth.service';
+import { GitHubApiService } from './github-api.service';
 
 @Injectable()
 export class IntegrationsService {
   private readonly logger = new Logger(IntegrationsService.name);
+  private readonly secretMask = '••••••••';
 
   constructor(
     private readonly entityManager: EntityManager,
     private readonly slackOAuthService: SlackOAuthService,
+    private readonly gitHubApiService: GitHubApiService,
   ) {}
 
   async listForProject(
@@ -153,12 +158,37 @@ export class IntegrationsService {
     if (integration.config.mode !== 'oauth') {
       throw new BadRequestException('La integración Slack no usa OAuth');
     }
+    const clientId =
+      typeof integration.config.clientId === 'string' ? integration.config.clientId.trim() : '';
+    const clientSecret =
+      typeof integration.config.clientSecret === 'string'
+        ? integration.config.clientSecret.trim()
+        : '';
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException(
+        'Configura Client ID y Client Secret de tu Slack App antes de conectar',
+      );
+    }
+    const redirectUri = this.slackOAuthService.resolveOAuthRedirectUri();
     return {
       authorizeUrl: this.slackOAuthService.buildAuthorizeUrl(
         integration.id,
         context.workspace.id,
+        clientId,
       ),
+      redirectUri,
     };
+  }
+
+  getOAuthSetup(): IntegrationOAuthSetupDto {
+    return {
+      slackRedirectUri: this.slackOAuthService.resolveOAuthRedirectUri(),
+    };
+  }
+
+  async listGitHubRepos(accessToken: string): Promise<ListGitHubReposResponseDto> {
+    const repos = await this.gitHubApiService.listAccessibleRepos(accessToken);
+    return { repos };
   }
 
   async completeSlackOAuthCallback(
@@ -173,7 +203,20 @@ export class IntegrationsService {
     if (integration.type !== IntegrationType.SLACK) {
       throw new BadRequestException('Integración inválida');
     }
-    const token = await this.slackOAuthService.exchangeCodeForToken(code);
+    const clientId =
+      typeof integration.config.clientId === 'string' ? integration.config.clientId.trim() : '';
+    const clientSecret =
+      typeof integration.config.clientSecret === 'string'
+        ? integration.config.clientSecret.trim()
+        : '';
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Slack App sin Client ID o Client Secret');
+    }
+    const token = await this.slackOAuthService.exchangeCodeForToken(
+      code,
+      clientId,
+      clientSecret,
+    );
     integration.config = {
       ...integration.config,
       mode: 'oauth',
@@ -255,6 +298,13 @@ export class IntegrationsService {
           if (typeof config.webhookUrl !== 'string' || config.webhookUrl.trim().length === 0) {
             throw new BadRequestException('Webhook URL de Slack requerida');
           }
+          return;
+        }
+        if (typeof config.clientId !== 'string' || config.clientId.trim().length === 0) {
+          throw new BadRequestException('Slack Client ID requerido para OAuth');
+        }
+        if (typeof config.clientSecret !== 'string' || config.clientSecret.trim().length === 0) {
+          throw new BadRequestException('Slack Client Secret requerido para OAuth');
         }
         return;
       }
@@ -264,6 +314,34 @@ export class IntegrationsService {
         }
         if (typeof config.recipientE164 !== 'string' || config.recipientE164.trim().length === 0) {
           throw new BadRequestException('recipientE164 requerido (ej. +54911...)');
+        }
+        return;
+      }
+      case IntegrationType.DISCORD: {
+        const mode = config.mode === 'bot' ? 'bot' : 'webhook';
+        if (mode === 'webhook') {
+          if (typeof config.webhookUrl !== 'string' || config.webhookUrl.trim().length === 0) {
+            throw new BadRequestException('Webhook URL de Discord requerida');
+          }
+          return;
+        }
+        if (typeof config.botToken !== 'string' || config.botToken.trim().length === 0) {
+          throw new BadRequestException('Bot token de Discord requerido');
+        }
+        if (typeof config.channelId !== 'string' || config.channelId.trim().length === 0) {
+          throw new BadRequestException('Channel ID de Discord requerido');
+        }
+        return;
+      }
+      case IntegrationType.GITHUB: {
+        if (typeof config.owner !== 'string' || config.owner.trim().length === 0) {
+          throw new BadRequestException('Owner de GitHub requerido');
+        }
+        if (typeof config.repo !== 'string' || config.repo.trim().length === 0) {
+          throw new BadRequestException('Repo de GitHub requerido');
+        }
+        if (typeof config.accessToken !== 'string' || config.accessToken.trim().length === 0) {
+          throw new BadRequestException('Personal Access Token de GitHub requerido');
         }
         return;
       }
@@ -282,6 +360,19 @@ export class IntegrationsService {
         mode: config.mode === 'oauth' ? 'oauth' : 'incoming_webhook',
       };
     }
+    if (type === IntegrationType.DISCORD) {
+      return {
+        ...config,
+        mode: config.mode === 'bot' ? 'bot' : 'webhook',
+      };
+    }
+    if (type === IntegrationType.GITHUB) {
+      return {
+        ...config,
+        owner: typeof config.owner === 'string' ? config.owner.trim() : config.owner,
+        repo: typeof config.repo === 'string' ? config.repo.trim() : config.repo,
+      };
+    }
     return { ...config };
   }
 
@@ -290,9 +381,36 @@ export class IntegrationsService {
     current: Record<string, unknown>,
     patch: Record<string, unknown>,
   ): Record<string, unknown> {
-    const merged = { ...current, ...patch };
+    const merged = this.preserveMaskedSecrets(current, patch, [
+      'secret',
+      'clientSecret',
+      'botToken',
+      'accessToken',
+      'webhookUrl',
+    ]);
     this.validateConfig(type, merged);
     return this.normalizeConfig(type, merged);
+  }
+
+  private preserveMaskedSecrets(
+    current: Record<string, unknown>,
+    patch: Record<string, unknown>,
+    keys: string[],
+  ): Record<string, unknown> {
+    const merged = { ...current, ...patch };
+    for (const key of keys) {
+      const patchValue = patch[key];
+      if (
+        patchValue === this.secretMask ||
+        patchValue === '' ||
+        patchValue === undefined
+      ) {
+        if (current[key] !== undefined) {
+          merged[key] = current[key];
+        }
+      }
+    }
+    return merged;
   }
 
   private buildSummary(integration: ProjectIntegration): IntegrationSummaryDto {
@@ -323,7 +441,7 @@ export class IntegrationsService {
         return {
           url: String(config.url ?? ''),
           ...(typeof config.secret === 'string' && config.secret.length > 0
-            ? { secret: '••••••••' }
+            ? { secret: this.secretMask }
             : {}),
         };
       case IntegrationType.SLACK: {
@@ -336,6 +454,10 @@ export class IntegrationsService {
         }
         return {
           mode,
+          clientId: typeof config.clientId === 'string' ? config.clientId : undefined,
+          ...(typeof config.clientSecret === 'string' && config.clientSecret.length > 0
+            ? { clientSecret: this.secretMask }
+            : {}),
           channelId: typeof config.channelId === 'string' ? config.channelId : undefined,
           channelName: typeof config.channelName === 'string' ? config.channelName : undefined,
           teamName: typeof config.teamName === 'string' ? config.teamName : undefined,
@@ -345,6 +467,32 @@ export class IntegrationsService {
         return {
           phoneNumberId: String(config.phoneNumberId ?? ''),
           recipientE164: String(config.recipientE164 ?? ''),
+        };
+      case IntegrationType.DISCORD: {
+        const mode = config.mode === 'bot' ? 'bot' : 'webhook';
+        if (mode === 'webhook') {
+          return {
+            mode,
+            ...(typeof config.webhookUrl === 'string' && config.webhookUrl.length > 0
+              ? { webhookUrl: this.secretMask }
+              : {}),
+          };
+        }
+        return {
+          mode,
+          channelId: typeof config.channelId === 'string' ? config.channelId : undefined,
+          ...(typeof config.botToken === 'string' && config.botToken.length > 0
+            ? { botToken: this.secretMask }
+            : {}),
+        };
+      }
+      case IntegrationType.GITHUB:
+        return {
+          owner: typeof config.owner === 'string' ? config.owner : '',
+          repo: typeof config.repo === 'string' ? config.repo : '',
+          ...(typeof config.accessToken === 'string' && config.accessToken.length > 0
+            ? { accessToken: this.secretMask }
+            : {}),
         };
       default:
         return {} as IntegrationDetailDto['config'];

@@ -15,6 +15,8 @@ import type {
   IntegrationDeliveryLogDto,
   IntegrationDetailDto,
   IntegrationSummaryDto,
+  IntegrationOAuthSetupDto,
+  ListGitHubReposResponseDto,
   SlackOAuthStartResponseDto,
 } from '@pm/contracts';
 import { JwtAuthGuard } from '../auth/guards/auth.guards';
@@ -24,6 +26,7 @@ import { WorkspaceMemberGuard } from '../workspaces/guards/workspace-member.guar
 import {
   CompleteSlackOAuthDto,
   CreateIntegrationDto,
+  ListGitHubReposDto,
   UpdateIntegrationDto,
 } from './dto/integration.dto';
 import { IntegrationsService } from './integrations.service';
@@ -59,6 +62,18 @@ export class ProjectIntegrationsController {
 @UseGuards(JwtAuthGuard, WorkspaceMemberGuard)
 export class IntegrationsController {
   constructor(private readonly integrationsService: IntegrationsService) {}
+
+  @Get('oauth-setup')
+  getOAuthSetup(): IntegrationOAuthSetupDto {
+    return this.integrationsService.getOAuthSetup();
+  }
+
+  @Post('github/list-repos')
+  listGitHubRepos(
+    @Body() listGitHubReposDto: ListGitHubReposDto,
+  ): Promise<ListGitHubReposResponseDto> {
+    return this.integrationsService.listGitHubRepos(listGitHubReposDto.accessToken);
+  }
 
   @Get(':integrationId')
   getOne(

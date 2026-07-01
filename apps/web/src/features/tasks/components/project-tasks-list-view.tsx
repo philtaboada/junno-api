@@ -74,7 +74,7 @@ type SectionBlockProps = {
     fieldId: string,
     value: CustomFieldValueDto | null,
   ) => Promise<void>;
-  onAddTask: (sectionId: string, name: string) => Promise<void>;
+  onAddTask: (sectionId: string, name: string) => Promise<string | void>;
   onAddSubtask: (parentTaskId: string, name: string) => Promise<void>;
   isAddingTask?: boolean;
   onAddingTaskChange?: (adding: boolean) => void;
@@ -132,9 +132,10 @@ function SectionBlock({
     }
   }
 
-  async function handleInlineAdd(name: string): Promise<void> {
-    await onAddTask(section.id, name);
+  async function handleInlineAdd(name: string): Promise<string | void> {
+    const taskId = await onAddTask(section.id, name);
     setIsAddingLocal(true);
+    return taskId;
   }
 
   return (
@@ -190,6 +191,7 @@ function SectionBlock({
               customFields={project.customFields}
               showTrailingActions={canEdit}
               onAdd={handleInlineAdd}
+              onOpenTask={onOpenTask}
               onCancel={handleCancelAdding}
             />
           ) : (
@@ -464,7 +466,7 @@ export function ProjectTasksListView({
     onProjectUpdated(updatedProject);
   }
 
-  async function handleAddTask(sectionId: string, name: string): Promise<void> {
+  async function handleAddTask(sectionId: string, name: string): Promise<string | void> {
     const optimisticTask = createOptimisticTaskSummary({
       name,
       projectId: project.id,
@@ -487,6 +489,7 @@ export function ProjectTasksListView({
           subtaskCount: 0,
         })),
       );
+      return created.id;
     } catch (error) {
       onTasksChange(previousTasks);
       const message =

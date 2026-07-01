@@ -38,6 +38,21 @@ export class IntegrationPayloadService {
     return `${label} en ${event.projectName}: ${event.taskName}\n${event.taskUrl}`;
   }
 
+  buildDiscordText(event: IntegrationEventPayloadDto): string {
+    const label = event.type === 'task.created' ? 'Nueva tarea' : 'Tarea actualizada';
+    return `**${label}** en **${event.projectName}**: ${event.taskName}\n${event.taskUrl}`;
+  }
+
+  buildGitHubCommentBody(event: IntegrationEventPayloadDto): string {
+    const label = event.type === 'task.created' ? 'Nueva tarea' : 'Tarea actualizada';
+    return `${label} en **${event.projectName}**: ${event.taskName}\n\n${event.taskUrl}`;
+  }
+
+  buildGitHubIssueTitle(event: IntegrationEventPayloadDto): string {
+    const prefix = event.type === 'task.created' ? '[Junno] Nueva tarea' : '[Junno] Tarea actualizada';
+    return `${prefix}: ${event.taskName}`;
+  }
+
   signWebhookPayload(secret: string, body: string): string {
     const digest = createHmac('sha256', secret).update(body).digest('hex');
     return `sha256=${digest}`;

@@ -14,7 +14,8 @@ type InlineAddTaskRowProps = {
   listColumns: ProjectListColumnDto[];
   customFields: CustomFieldDefinitionDto[];
   showTrailingActions?: boolean;
-  onAdd: (name: string) => Promise<void>;
+  onAdd: (name: string) => Promise<string | void>;
+  onOpenTask?: (taskId: string) => void;
   onCancel: () => void;
 };
 
@@ -23,6 +24,7 @@ export function InlineAddTaskRow({
   customFields,
   showTrailingActions = false,
   onAdd,
+  onOpenTask,
   onCancel,
 }: InlineAddTaskRowProps) {
   const [name, setName] = useState('');
@@ -33,7 +35,7 @@ export function InlineAddTaskRow({
     showTrailingActions,
   });
 
-  async function handleSubmit(): Promise<void> {
+  async function handleSubmit(openDetailOnSuccess = false): Promise<void> {
     const trimmedName = name.trim();
     if (trimmedName.length < 1) {
       onCancel();
@@ -45,7 +47,12 @@ export function InlineAddTaskRow({
     isSubmittingRef.current = true;
     setName('');
     try {
-      await onAdd(trimmedName);
+      const taskId = await onAdd(trimmedName);
+      if (openDetailOnSuccess && taskId && onOpenTask) {
+        onOpenTask(taskId);
+        onCancel();
+        return;
+      }
       inputRef.current?.focus();
     } finally {
       isSubmittingRef.current = false;
@@ -55,7 +62,7 @@ export function InlineAddTaskRow({
   function handleBlur(): void {
     const trimmedName = name.trim();
     if (trimmedName.length > 0) {
-      void handleSubmit();
+      void handleSubmit(true);
       return;
     }
     if (!isSubmittingRef.current) {

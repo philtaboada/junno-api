@@ -35,6 +35,16 @@ class SlackIntegrationConfigDto {
 
   @IsOptional()
   @IsString()
+  @MinLength(3)
+  clientId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  clientSecret?: string;
+
+  @IsOptional()
+  @IsString()
   channelId?: string;
 
   @IsOptional()
@@ -50,6 +60,39 @@ class WhatsappKapsoIntegrationConfigDto {
   @IsString()
   @MinLength(8)
   recipientE164!: string;
+}
+
+class DiscordIntegrationConfigDto {
+  @IsEnum(['webhook', 'bot'] as const)
+  mode!: 'webhook' | 'bot';
+
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  webhookUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(10)
+  botToken?: string;
+
+  @IsOptional()
+  @IsString()
+  channelId?: string;
+}
+
+class GitHubIntegrationConfigDto {
+  @IsString()
+  @MinLength(1)
+  owner!: string;
+
+  @IsString()
+  @MinLength(1)
+  repo!: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(10)
+  accessToken?: string;
 }
 
 export class CreateIntegrationDto {
@@ -100,8 +143,16 @@ export class CompleteSlackOAuthDto {
   channelName?: string;
 }
 
+export class ListGitHubReposDto {
+  @IsString()
+  @MinLength(10)
+  accessToken!: string;
+}
+
 export {
   WebhookIntegrationConfigDto,
   SlackIntegrationConfigDto,
+  DiscordIntegrationConfigDto,
+  GitHubIntegrationConfigDto,
   WhatsappKapsoIntegrationConfigDto,
 };

@@ -2,7 +2,9 @@ import type {
   CreateIntegrationRequestDto,
   IntegrationDeliveryLogDto,
   IntegrationDetailDto,
+  IntegrationOAuthSetupDto,
   IntegrationSummaryDto,
+  ListGitHubReposResponseDto,
   SlackOAuthStartResponseDto,
   UpdateIntegrationRequestDto,
 } from '@pm/contracts';
@@ -52,6 +54,17 @@ export async function fetchIntegrationDeliveryLogs(
     `/integrations/${integrationId}/delivery-logs?limit=${limit}`,
     { method: 'GET' },
   );
+}
+
+export async function fetchGitHubRepos(accessToken: string): Promise<ListGitHubReposResponseDto> {
+  return apiRequest<ListGitHubReposResponseDto>('/integrations/github/list-repos', {
+    method: 'POST',
+    body: { accessToken },
+  });
+}
+
+export async function fetchIntegrationOAuthSetup(): Promise<IntegrationOAuthSetupDto> {
+  return apiRequest<IntegrationOAuthSetupDto>('/integrations/oauth-setup', { method: 'GET' });
 }
 
 export async function startSlackOAuth(

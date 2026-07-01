@@ -97,7 +97,13 @@ REDIS_URL=rediss://default:[PASSWORD]@[HOST]:6379
 | `AUTOMATION_WORKER_ENABLED` | Omitir (on con `REDIS_URL`) o `false` para desactivar |
 | `INTEGRATIONS_WORKER_ENABLED` | Omitir (on con `REDIS_URL`) o `false` para desactivar |
 | `COOKIE_SAME_SITE` | `none` si el login falla entre dominios distintos |
-| `SLACK_REDIRECT_URI` | `https://TU-RAILWAY/api/v1/public/integrations/slack/oauth/callback` |
+| `API_PUBLIC_URL` | `https://TU-RAILWAY.up.railway.app` (sin `/api/v1`) — callbacks OAuth Slack |
+
+Slack OAuth es **BYOC**: cada integración guarda `clientId` / `clientSecret` en DB. En la Slack App del cliente, registrar Redirect URL:
+
+`https://TU-RAILWAY.up.railway.app/api/v1/public/integrations/slack/oauth/callback`
+
+(o el valor de `GET /integrations/oauth-setup` → `slackRedirectUri`).
 
 Railway inyecta **`PORT`** automáticamente; la API ya lo usa (`main.ts`).
 

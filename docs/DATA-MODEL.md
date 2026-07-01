@@ -120,7 +120,7 @@ Ver `docs/FORMS.md`.
 
 | Tabla | Propósito |
 |-------|-----------|
-| `project_integrations` | Webhook, Slack o WhatsApp (Kapso) por proyecto |
+| `project_integrations` | Webhook, Slack, Discord, GitHub o WhatsApp (Kapso) por proyecto — credenciales BYOC en `config` JSON |
 | `integration_delivery_logs` | Historial de entregas async |
 
 Ver `docs/INTEGRATIONS.md`.

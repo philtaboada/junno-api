@@ -62,13 +62,24 @@ Usada por BullMQ (automation, integraciones). En Railway los workers pueden qued
 
 ---
 
-## 3. Frontend — Vercel (`apps/web`)
+## 3. Frontend — Vercel CLI (`project-3j7je`)
 
 | Setting | Valor |
 |---------|--------|
+| **Proyecto Vercel** | **`project-3j7je`** (team `sunno1`) |
+| **Dominio prod** | `https://www.junno.online` |
 | **Root Directory** | `apps/web` |
 | **Install Command** | `bun install` |
 | **Build Command** | `bun run build` |
+| **Método deploy** | **CLI** (`bunx vercel deploy --prod`) desde la raíz del monorepo |
+
+> **⚠️** En la cuenta hay otro proyecto llamado `web` (`web-phi-six-70.vercel.app`). **No es producción.** Los deploys deben ir siempre a `project-3j7je`.
+
+```bash
+cd project-management
+bunx vercel link --project project-3j7je --scope sunno1 --yes
+bunx vercel deploy --prod --yes
+```
 
 ### Environment Variables
 
@@ -99,9 +110,16 @@ Variables de entorno y pasos: **`docs/RAILWAY.md`**.
 
 1. Supabase + Upstash + Resend configurados.
 2. Migraciones en Supabase.
-3. **Railway** → deploy API → generar dominio → probar `/api/v1/health`.
-4. **Vercel** → env `NEXT_PUBLIC_*` con URL Railway → redeploy web.
-5. Railway → `CORS_ORIGIN` y `WEB_APP_URL` = URL Vercel.
+3. **Railway** → `git push origin main` → probar `/api/v1/health`.
+4. **Vercel** (`project-3j7je`) → env `NEXT_PUBLIC_*` con URL Railway → `bunx vercel deploy --prod`.
+5. Railway → `CORS_ORIGIN` y `WEB_APP_URL` = `https://www.junno.online`.
+
+### Cuando pidas deploy en el día a día
+
+| Capa | Acción |
+|------|--------|
+| **Backend** | commit + `git push origin main` → Railway redeploya solo |
+| **Frontend** | `bunx vercel deploy --prod --yes` desde raíz, proyecto **`project-3j7je`** |
 
 ---
 

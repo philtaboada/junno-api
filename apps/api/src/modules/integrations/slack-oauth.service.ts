@@ -23,9 +23,25 @@ type SlackOAuthTokenResponse = {
 export class SlackOAuthService {
   constructor(private readonly configService: ConfigService) {}
 
-  buildAuthorizeUrl(integrationId: string, workspaceId: string): string {
-    const clientId = this.getRequiredEnv('SLACK_CLIENT_ID');
-    const redirectUri = this.getRequiredEnv('SLACK_REDIRECT_URI');
+  /** Callback OAuth fijo de Junno — registrar en cada Slack App del cliente */
+  resolveOAuthRedirectUri(): string {
+    const apiPublicUrl = this.configService.get<string>('API_PUBLIC_URL');
+    if (apiPublicUrl) {
+      return `${apiPublicUrl.replace(/\/$/, '')}/api/v1/public/integrations/slack/oauth/callback`;
+    }
+    const port =
+      this.configService.get<string>('PORT') ??
+      this.configService.get<string>('API_PORT') ??
+      '3000';
+    return `http://localhost:${port}/api/v1/public/integrations/slack/oauth/callback`;
+  }
+
+  buildAuthorizeUrl(
+    integrationId: string,
+    workspaceId: string,
+    clientId: string,
+  ): string {
+    const redirectUri = this.resolveOAuthRedirectUri();
     const state = this.signState({ integrationId, workspaceId, exp: Date.now() + 600_000 });
     const scopes = ['chat:write', 'channels:read'].join(',');
     const params = new URLSearchParams({
@@ -60,14 +76,16 @@ export class SlackOAuthService {
     return payload;
   }
 
-  async exchangeCodeForToken(code: string): Promise<{
+  async exchangeCodeForToken(
+    code: string,
+    clientId: string,
+    clientSecret: string,
+  ): Promise<{
     readonly botToken: string;
     readonly teamId: string;
     readonly teamName: string;
   }> {
-    const clientId = this.getRequiredEnv('SLACK_CLIENT_ID');
-    const clientSecret = this.getRequiredEnv('SLACK_CLIENT_SECRET');
-    const redirectUri = this.getRequiredEnv('SLACK_REDIRECT_URI');
+    const redirectUri = this.resolveOAuthRedirectUri();
     const body = new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
@@ -102,13 +120,5 @@ export class SlackOAuthService {
     const secret =
       this.configService.get<string>('JWT_ACCESS_SECRET') ?? 'junno-dev-secret';
     return createHmac('sha256', secret).update(payloadBase64).digest('base64url');
-  }
-
-  private getRequiredEnv(key: string): string {
-    const value = this.configService.get<string>(key);
-    if (!value) {
-      throw new BadRequestException(`${key} no configurada`);
-    }
-    return value;
   }
 }

@@ -19,6 +19,7 @@ import {
 import { IntegrationsService } from './integrations.service';
 import { PublicKapsoWebhooksController } from './public-kapso-webhooks.controller';
 import { SlackOAuthService } from './slack-oauth.service';
+import { GitHubApiService } from './github-api.service';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SlackOAuthService } from './slack-oauth.service';
   providers: [
     IntegrationsService,
     SlackOAuthService,
+    GitHubApiService,
     IntegrationQueueService,
     IntegrationProcessorService,
     IntegrationPayloadService,
